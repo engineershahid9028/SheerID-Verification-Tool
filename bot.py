@@ -21,17 +21,12 @@ def send_message(chat_id, text):
 # ================= WORKER =================
 
 def run_job(chat_id, command):
-    """
-    Runs long job in background and sends result
-    """
     try:
-        send_message(chat_id, "⏳ Job started. I’ll notify you when finished.")
-
         result = subprocess.run(
             command,
             capture_output=True,
             text=True,
-            timeout=600   # 10 minutes max
+            timeout=600
         )
 
         output = result.stdout or result.stderr or "Job finished."
@@ -47,6 +42,7 @@ def run_job(chat_id, command):
 
 def start_job_async(chat_id, command):
     thread = threading.Thread(target=run_job, args=(chat_id, command))
+    thread.daemon = True
     thread.start()
 
 
@@ -54,7 +50,7 @@ def start_job_async(chat_id, command):
 
 def polling_loop():
     global offset
-    print("🤖 Bot running...")
+    print("🤖 Bot started")
 
     while True:
         try:
@@ -78,7 +74,9 @@ def polling_loop():
                         send_message(chat_id, "Send /run to start a job")
 
                     elif text == "/run":
-                        # Example job
+                        send_message(chat_id, "⏳ Job started. You will get result shortly.")
+
+                        # Run job in background thread
                         command = ["python", "job.py"]
                         start_job_async(chat_id, command)
 
@@ -90,8 +88,6 @@ def polling_loop():
 
         time.sleep(2)
 
-
-# ================= START =================
 
 if __name__ == "__main__":
     polling_loop()
