@@ -2,23 +2,77 @@ import threading
 import time
 import requests
 import os
+import subprocess
 from fastapi import FastAPI
 
+# ================= CONFIG =================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-API = f"https://api.telegram.org/bot{BOT_TOKEN}"
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN is not set")
 
-offset = 0
+API = f"https://api.telegram.org/bot{BOT_TOKEN}"
+POLL_TIMEOUT = 30
+POLL_SLEEP = 2
+
+# Command → Script mapping
+TOOLS = {
+    "/boltnew": "boltnew-verify-tool/main.py",
+    "/k12": "k12-verify-tool/main.py",
+    "/one": "one-verify-tool/main.py",
+    "/perplexity": "perplexity-verify-tool/main.py",
+    "/spotify": "spotify-verify-tool/main.py",
+    "/veterans": "veterans-verify-tool/main.py",
+    "/youtube": "youtube-verify-tool/main.py",
+}
+
+# ================= FASTAPI =================
 app = FastAPI()
 
 @app.get("/")
 def home():
     return {"status": "ok", "bot": "running"}
 
+# ================= TELEGRAM =================
 def send_message(chat_id, text):
-    requests.post(f"{API}/sendMessage", json={
-        "chat_id": chat_id,
-        "text": text[:4000]
-    })
+    try:
+        requests.post(
+            f"{API}/sendMessage",
+            json={"chat_id": chat_id, "text": text[:4000]},
+            timeout=20
+        )
+    except Exception as e:
+        print("Send error:", e)
+
+# ================= TOOL RUNNER =================
+def run_tool(command):
+    if command not in TOOLS:
+        return "❌ Unknown command. Type /start"
+
+    script = TOOLS[command]
+
+    if not os.path.exists(script):
+        return f"❌ Script not found: {script}"
+
+    try:
+        process = subprocess.run(
+            ["python", script],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+
+        output = (process.stdout or "") + ("\n" + process.stderr if process.stderr else "")
+        output = output.strip()
+
+        return output if output else "✅ Tool finished successfully."
+
+    except subprocess.TimeoutExpired:
+        return "⏱ Tool timeout. Try again."
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+
+# ================= POLLING LOOP =================
+offset = 0
 
 def polling_loop():
     global offset
@@ -26,37 +80,48 @@ def polling_loop():
 
     while True:
         try:
-            res = requests.get(f"{API}/getUpdates", params={
-                "timeout": 30,
-                "offset": offset
-            }).json()
+            response = requests.get(
+                f"{API}/getUpdates",
+                params={"timeout": POLL_TIMEOUT, "offset": offset},
+                timeout=POLL_TIMEOUT + 10
+            ).json()
 
-            if "result" in res:
-                for update in res["result"]:
+            if "result" in response:
+                for update in response["result"]:
                     offset = update["update_id"] + 1
 
                     if "message" not in update:
                         continue
 
                     chat_id = update["message"]["chat"]["id"]
-                    text = update["message"].get("text", "")
+                    text = (update["message"].get("text") or "").strip().lower()
 
                     if text == "/start":
-                        send_message(chat_id,
+                        send_message(
+                            chat_id,
                             "Welcome!\n\nAvailable tools:\n"
+                            "/boltnew\n"
                             "/k12\n"
+                            "/one\n"
+                            "/perplexity\n"
                             "/spotify\n"
-                            "/youtube\n"
-                            "/canva\n"
-                            "/veterans"
+                            "/veterans\n"
+                            "/youtube\n\n"
+                            "Send a command to run a tool."
                         )
+
+                    elif text in TOOLS:
+                        send_message(chat_id, "⏳ Running tool, please wait...")
+                        result = run_tool(text)
+                        send_message(chat_id, result)
+
                     else:
-                        send_message(chat_id, f"Received: {text}")
+                        send_message(chat_id, "❓ Unknown command. Type /start")
 
         except Exception as e:
             print("Polling error:", e)
 
-        time.sleep(2)
+        time.sleep(POLL_SLEEP)
 
-# Start polling in background thread
+# ================= START BOT =================
 threading.Thread(target=polling_loop, daemon=True).start()
