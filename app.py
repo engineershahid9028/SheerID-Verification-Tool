@@ -25,6 +25,9 @@ TOOLS = {
     "/youtube": "youtube-verify-tool/main.py",
 }
 
+# Store pending user input
+user_state = {}
+
 # ================= FASTAPI =================
 app = FastAPI()
 
@@ -44,27 +47,21 @@ def send_message(chat_id, text):
         print("Send error:", e)
 
 # ================= TOOL RUNNER =================
-def run_tool(command, argument=None):
-    if command not in TOOLS:
-        return "❌ Unknown command"
-
+def run_tool(command, argument):
     script = TOOLS[command]
 
     try:
-        cmd = ["python", script]
-        if argument:
-            cmd.append(argument)
-
         result = subprocess.run(
-            cmd,
+            ["python", script, argument],
             capture_output=True,
             text=True,
             timeout=300
         )
-        return result.stdout or result.stderr or "Finished."
+        return result.stdout or result.stderr or "✅ Tool finished."
+    except subprocess.TimeoutExpired:
+        return "⏱ Tool timed out. Try again."
     except Exception as e:
-        return str(e)
-
+        return f"❌ Error: {str(e)}"
 
 # ================= POLLING LOOP =================
 offset = 0
@@ -89,9 +86,10 @@ def polling_loop():
                         continue
 
                     chat_id = update["message"]["chat"]["id"]
-                    text = (update["message"].get("text") or "").strip().lower()
+                    text = (update["message"].get("text") or "").strip()
 
-                    if text == "/start":
+                    # Start menu
+                    if text.lower() == "/start":
                         send_message(
                             chat_id,
                             "Welcome!\n\nAvailable tools:\n"
@@ -105,9 +103,16 @@ def polling_loop():
                             "Send a command to run a tool."
                         )
 
-                    elif text in TOOLS:
+                    # Tool selected → ask for URL
+                    elif text.lower() in TOOLS:
+                        send_message(chat_id, "🔗 Please send verification URL:")
+                        user_state[chat_id] = text.lower()
+
+                    # URL received → run tool
+                    elif chat_id in user_state:
+                        tool = user_state.pop(chat_id)
                         send_message(chat_id, "⏳ Running tool, please wait...")
-                        result = run_tool(text)
+                        result = run_tool(tool, text.strip())
                         send_message(chat_id, result)
 
                     else:
