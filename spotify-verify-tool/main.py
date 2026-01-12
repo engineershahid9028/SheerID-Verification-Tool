@@ -528,7 +528,14 @@ def main():
     if args.url:
         url = args.url
     else:
-        url = input("   Enter verification URL: ").strip()
+        import sys
+
+if len(sys.argv) < 2:
+    print("❌ No verification URL provided")
+    sys.exit(1)
+
+url = sys.argv[1].strip()
+
     
     if not url or "sheerid.com" not in url:
         print("\n   ❌ Invalid URL. Must contain sheerid.com")
