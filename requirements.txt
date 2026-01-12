@@ -2,3 +2,6 @@ httpx
 Pillow
 requests
 cloudscraper
+fastapi
+uvicorn
+requests
