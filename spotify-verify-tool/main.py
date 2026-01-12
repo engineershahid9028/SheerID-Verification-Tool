@@ -553,7 +553,9 @@ if "sheerid.com" not in url:
     check = verifier.check_link()
     if not check.get("valid"):
         print(f"\n   ❌ Link Error: {check.get('error')}")
-        return
+        import sys
+sys.exit(1)
+
     
     result = verifier.verify()
     
