@@ -10,7 +10,8 @@ Enhanced with:
 
 Author: ThanhNguyxn
 """
-
+import argparse
+import sys
 import os
 import re
 import sys
@@ -22,6 +23,10 @@ from pathlib import Path
 from io import BytesIO
 from typing import Dict, Optional, Tuple
 from functools import wraps
+parser = argparse.ArgumentParser()
+parser.add_argument("--url", help="SheerID verification URL")
+parser.add_argument("--proxy", help="Proxy address")
+args = parser.parse_args()
 
 try:
     import httpx
@@ -516,7 +521,11 @@ def main():
     parser.add_argument("url", nargs="?", help="Verification URL")
     parser.add_argument("--proxy", help="Proxy server (host:port or http://user:pass@host:port)")
     args = parser.parse_args()
-    
+    parser = argparse.ArgumentParser()
+parser.add_argument("--url", help="SheerID verification URL")
+parser.add_argument("--proxy", help="Proxy address")
+args = parser.parse_args()
+
     print()
     print("╔" + "═" * 56 + "╗")
     print("║" + " 🎵 Spotify Student Verification Tool".center(56) + "║")
@@ -528,11 +537,13 @@ def main():
 
 # ------------------ Get URL ------------------
 
-# Priority:
-# 1) Argument passed from Telegram (sys.argv)
-# 2) argparse --url flag (CLI usage)
+# ------------------ Get URL ------------------
 
-if len(sys.argv) >= 2:
+# Priority:
+# 1) Telegram argument (sys.argv)
+# 2) CLI --url flag
+
+if len(sys.argv) >= 2 and sys.argv[1].startswith("http"):
     url = sys.argv[1].strip()
 elif args.url:
     url = args.url.strip()
@@ -541,49 +552,46 @@ else:
     sys.exit(1)
 
 # ------------------ Validate URL ------------------
-
 if "sheerid.com" not in url:
     print("❌ Invalid SheerID URL")
     sys.exit(1)
 
-# ------------------ Show proxy info ------------------
 
+# ------------------ Show proxy info ------------------
 if args.proxy:
-    print(f"   🔒 Using proxy: {args.proxy}")
+    print(f"🔒 Using proxy: {args.proxy}")
 
 print("\n   ⏳ Processing...")
 
 # ------------------ Run verifier ------------------
 
+print("\n⏳ Processing...")
+
 verifier = SpotifyVerifier(url, proxy=args.proxy)
 
-# Check link first
 check = verifier.check_link()
 if not check.get("valid"):
-    print(f"\n   ❌ Link Error: {check.get('error')}")
+    print(f"\n❌ Link Error: {check.get('error')}")
     sys.exit(1)
 
-# Run verification
 result = verifier.verify()
 
-# ------------------ Output ------------------
 
-print()
-print("─" * 58)
+# ------------------ Output ------------------
+print("\n" + "─" * 58)
 
 if result.get("success"):
-    print("   🎉 SUCCESS!")
-    print(f"   👤 {result.get('student')}")
-    print(f"   📧 {result.get('email')}")
-    print(f"   🏫 {result.get('school')}")
-    print()
-    print("   ⏳ Wait 24-48 hours for manual review")
+    print("🎉 SUCCESS!")
+    print(f"👤 {result.get('student')}")
+    print(f"📧 {result.get('email')}")
+    print(f"🏫 {result.get('school')}")
+    print("\n⏳ Wait 24–48 hours for manual review")
 else:
-    print(f"   ❌ FAILED: {result.get('error')}")
+    print(f"❌ FAILED: {result.get('error')}")
 
 print("─" * 58)
-
 stats.print_stats()
+
 
 
 if __name__ == "__main__":
