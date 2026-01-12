@@ -524,55 +524,66 @@ def main():
     print("╚" + "═" * 56 + "╝")
     print()
     
-    # Get URL
-    if args.url:
-        url = args.url
-    else:
-        import sys
+    import sys
 
-if len(sys.argv) < 2:
+# ------------------ Get URL ------------------
+
+# Priority:
+# 1) Argument passed from Telegram (sys.argv)
+# 2) argparse --url flag (CLI usage)
+
+if len(sys.argv) >= 2:
+    url = sys.argv[1].strip()
+elif args.url:
+    url = args.url.strip()
+else:
     print("❌ No verification URL provided")
     sys.exit(1)
 
-url = sys.argv[1].strip()
+# ------------------ Validate URL ------------------
 
 if "sheerid.com" not in url:
-    print("Invalid URL")
+    print("❌ Invalid SheerID URL")
     sys.exit(1)
 
-    
-    # Show proxy info
-    if args.proxy:
-        print(f"   🔒 Using proxy: {args.proxy}")
-    
-    print("\n   ⏳ Processing...")
-    
-    verifier = SpotifyVerifier(url, proxy=args.proxy)
-    
-    # Check link first
-    check = verifier.check_link()
-    if not check.get("valid"):
-        print(f"\n   ❌ Link Error: {check.get('error')}")
-        import sys
-sys.exit(1)
+# ------------------ Show proxy info ------------------
 
-    
-    result = verifier.verify()
-    
+if args.proxy:
+    print(f"   🔒 Using proxy: {args.proxy}")
+
+print("\n   ⏳ Processing...")
+
+# ------------------ Run verifier ------------------
+
+verifier = SpotifyVerifier(url, proxy=args.proxy)
+
+# Check link first
+check = verifier.check_link()
+if not check.get("valid"):
+    print(f"\n   ❌ Link Error: {check.get('error')}")
+    sys.exit(1)
+
+# Run verification
+result = verifier.verify()
+
+# ------------------ Output ------------------
+
+print()
+print("─" * 58)
+
+if result.get("success"):
+    print("   🎉 SUCCESS!")
+    print(f"   👤 {result.get('student')}")
+    print(f"   📧 {result.get('email')}")
+    print(f"   🏫 {result.get('school')}")
     print()
-    print("─" * 58)
-    if result.get("success"):
-        print("   🎉 SUCCESS!")
-        print(f"   👤 {result.get('student')}")
-        print(f"   📧 {result.get('email')}")
-        print(f"   🏫 {result.get('school')}")
-        print()
-        print("   ⏳ Wait 24-48 hours for manual review")
-    else:
-        print(f"   ❌ FAILED: {result.get('error')}")
-    print("─" * 58)
-    
-    stats.print_stats()
+    print("   ⏳ Wait 24-48 hours for manual review")
+else:
+    print(f"   ❌ FAILED: {result.get('error')}")
+
+print("─" * 58)
+
+stats.print_stats()
 
 
 if __name__ == "__main__":
