@@ -512,97 +512,73 @@ class SpotifyVerifier:
 
 
 # ============ MAIN ============
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Spotify Student Verification Tool")
-    parser.add_argument("url", nargs="?", help="Verification URL")
-    parser.add_argument("--proxy", help="Proxy server (host:port or http://user:pass@host:port)")
-    args = parser.parse_args()
-    parser = argparse.ArgumentParser()
 import argparse
 import sys
 
-parser = argparse.ArgumentParser()
-parser.add_argument("positional_url", nargs="?", help="Verification URL")
-parser.add_argument("--url", help="Verification URL (named)")
-parser.add_argument("--proxy", help="Proxy address")
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser(description="Spotify Student Verification Tool")
 
-# Accept URL from positional argument OR --url
-if args.positional_url:
-    url = args.positional_url
-elif args.url:
-    url = args.url
-else:
-    print("❌ No verification URL provided")
-    sys.exit(1)
+    # Accept URL both ways:
+    #   python main.py https://example.com
+    #   python main.py --url https://example.com
+    parser.add_argument("positional_url", nargs="?", help="Verification URL")
+    parser.add_argument("--url", help="Verification URL (named)")
+    parser.add_argument("--proxy", help="Proxy server (host:port or http://user:pass@host:port)")
 
-print()
-print("╔" + "═" * 56 + "╗")
-print("║" + " 🎵 Spotify Student Verification Tool".center(56) + "║")
-print("║" + " SheerID Student Discount".center(56) + "║")
-print("╚" + "═" * 56 + "╝")
-print()
-import sys
+    args = parser.parse_args()
 
+    # Resolve URL
+    if args.positional_url:
+        url = args.positional_url.strip()
+    elif args.url:
+        url = args.url.strip()
+    else:
+        print("❌ No verification URL provided")
+        sys.exit(1)
 
-# ------------------ Get URL ------------------
+    # Validate URL
+    if "sheerid.com" not in url:
+        print("❌ Invalid SheerID URL")
+        sys.exit(1)
 
-# ------------------ Get URL ------------------
+    # Banner
+    print()
+    print("╔" + "═" * 56 + "╗")
+    print("║" + " 🎵 Spotify Student Verification Tool".center(56) + "║")
+    print("║" + " SheerID Student Discount".center(56) + "║")
+    print("╚" + "═" * 56 + "╝")
+    print()
 
-# Priority:
-# 1) Telegram argument (sys.argv)
-# 2) CLI --url flag
+    # Proxy info
+    if args.proxy:
+        print(f"🔒 Using proxy: {args.proxy}")
 
-if len(sys.argv) >= 2 and sys.argv[1].startswith("http"):
-    url = sys.argv[1].strip()
-elif args.url:
-    url = args.url.strip()
-else:
-    print("❌ No verification URL provided")
-    sys.exit(1)
+    print("\n⏳ Processing...")
 
-# ------------------ Validate URL ------------------
-if "sheerid.com" not in url:
-    print("❌ Invalid SheerID URL")
-    sys.exit(1)
+    # Run verifier
+    verifier = SpotifyVerifier(url, proxy=args.proxy)
 
+    check = verifier.check_link()
+    if not check.get("valid"):
+        print(f"\n❌ Link Error: {check.get('error')}")
+        sys.exit(1)
 
-# ------------------ Show proxy info ------------------
-if args.proxy:
-    print(f"🔒 Using proxy: {args.proxy}")
+    result = verifier.verify()
 
-print("\n   ⏳ Processing...")
+    # Output
+    print("\n" + "─" * 58)
 
-# ------------------ Run verifier ------------------
+    if result.get("success"):
+        print("🎉 SUCCESS!")
+        print(f"👤 {result.get('student')}")
+        print(f"📧 {result.get('email')}")
+        print(f"🏫 {result.get('school')}")
+        print("\n⏳ Wait 24–48 hours for manual review")
+    else:
+        print(f"❌ FAILED: {result.get('error')}")
 
-print("\n⏳ Processing...")
-
-verifier = SpotifyVerifier(url, proxy=args.proxy)
-
-check = verifier.check_link()
-if not check.get("valid"):
-    print(f"\n❌ Link Error: {check.get('error')}")
-    sys.exit(1)
-
-result = verifier.verify()
-
-
-# ------------------ Output ------------------
-print("\n" + "─" * 58)
-
-if result.get("success"):
-    print("🎉 SUCCESS!")
-    print(f"👤 {result.get('student')}")
-    print(f"📧 {result.get('email')}")
-    print(f"🏫 {result.get('school')}")
-    print("\n⏳ Wait 24–48 hours for manual review")
-else:
-    print(f"❌ FAILED: {result.get('error')}")
-
-print("─" * 58)
-stats.print_stats()
-
+    print("─" * 58)
+    stats.print_stats()
 
 
 if __name__ == "__main__":
