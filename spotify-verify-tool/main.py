@@ -536,10 +536,10 @@ if len(sys.argv) < 2:
 
 url = sys.argv[1].strip()
 
-    
-    if not url or "sheerid.com" not in url:
-        print("\n   ❌ Invalid URL. Must contain sheerid.com")
-        return
+if "sheerid.com" not in url:
+    print("Invalid URL")
+    sys.exit(1)
+
     
     # Show proxy info
     if args.proxy:
