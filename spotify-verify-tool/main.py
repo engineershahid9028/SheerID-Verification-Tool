@@ -531,9 +531,8 @@ print("║" + " 🎵 Spotify Student Verification Tool".center(56) + "║")
 print("║" + " SheerID Student Discount".center(56) + "║")
 print("╚" + "═" * 56 + "╝")
 print()
+import sys
 
-    
-    import sys
 
 # ------------------ Get URL ------------------
 
