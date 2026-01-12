@@ -525,13 +525,13 @@ def main():
 parser.add_argument("--url", help="SheerID verification URL")
 parser.add_argument("--proxy", help="Proxy address")
 args = parser.parse_args()
+print()
+print("╔" + "═" * 56 + "╗")
+print("║" + " 🎵 Spotify Student Verification Tool".center(56) + "║")
+print("║" + " SheerID Student Discount".center(56) + "║")
+print("╚" + "═" * 56 + "╝")
+print()
 
-    print()
-    print("╔" + "═" * 56 + "╗")
-    print("║" + " 🎵 Spotify Student Verification Tool".center(56) + "║")
-    print("║" + " SheerID Student Discount".center(56) + "║")
-    print("╚" + "═" * 56 + "╝")
-    print()
     
     import sys
 
