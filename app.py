@@ -44,32 +44,27 @@ def send_message(chat_id, text):
         print("Send error:", e)
 
 # ================= TOOL RUNNER =================
-def run_tool(command):
+def run_tool(command, argument=None):
     if command not in TOOLS:
-        return "❌ Unknown command. Type /start"
+        return "❌ Unknown command"
 
     script = TOOLS[command]
 
-    if not os.path.exists(script):
-        return f"❌ Script not found: {script}"
-
     try:
-        process = subprocess.run(
-            ["python", script],
+        cmd = ["python", script]
+        if argument:
+            cmd.append(argument)
+
+        result = subprocess.run(
+            cmd,
             capture_output=True,
             text=True,
             timeout=300
         )
-
-        output = (process.stdout or "") + ("\n" + process.stderr if process.stderr else "")
-        output = output.strip()
-
-        return output if output else "✅ Tool finished successfully."
-
-    except subprocess.TimeoutExpired:
-        return "⏱ Tool timeout. Try again."
+        return result.stdout or result.stderr or "Finished."
     except Exception as e:
-        return f"❌ Error: {str(e)}"
+        return str(e)
+
 
 # ================= POLLING LOOP =================
 offset = 0
