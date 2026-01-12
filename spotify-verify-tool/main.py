@@ -23,10 +23,7 @@ from pathlib import Path
 from io import BytesIO
 from typing import Dict, Optional, Tuple
 from functools import wraps
-parser = argparse.ArgumentParser()
-parser.add_argument("--url", help="SheerID verification URL")
-parser.add_argument("--proxy", help="Proxy address")
-args = parser.parse_args()
+
 
 try:
     import httpx
@@ -522,9 +519,24 @@ def main():
     parser.add_argument("--proxy", help="Proxy server (host:port or http://user:pass@host:port)")
     args = parser.parse_args()
     parser = argparse.ArgumentParser()
-parser.add_argument("--url", help="SheerID verification URL")
+import argparse
+import sys
+
+parser = argparse.ArgumentParser()
+parser.add_argument("positional_url", nargs="?", help="Verification URL")
+parser.add_argument("--url", help="Verification URL (named)")
 parser.add_argument("--proxy", help="Proxy address")
 args = parser.parse_args()
+
+# Accept URL from positional argument OR --url
+if args.positional_url:
+    url = args.positional_url
+elif args.url:
+    url = args.url
+else:
+    print("❌ No verification URL provided")
+    sys.exit(1)
+
 print()
 print("╔" + "═" * 56 + "╗")
 print("║" + " 🎵 Spotify Student Verification Tool".center(56) + "║")
